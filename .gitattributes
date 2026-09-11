@@ -1,0 +1,13 @@
+*.pkl binary
+*.png binary
+*.xlsx binary
+*.zip binary
+**/POSCAR* text eol=lf
+*.out text eol=lf
+*.eci text eol=lf
+*.ecimult text eol=lf
+*.in text eol=lf
+*.csv text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
