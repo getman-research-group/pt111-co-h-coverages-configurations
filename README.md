@@ -2,15 +2,15 @@
 
 This repository contains the figure-generation scripts, processed plotting datasets, cluster-expansion files, grand canonical Monte Carlo (GCMC) simulation code, GCMC snapshots, and spatial-analysis utilities associated with the manuscript:
 
-**Sifat Hossain, Venkata Rohit Punyapu, Phillip Christopher and Rachel B. Getman**  
-**"Coverages and Configurations of CO* and H* on Pt(111) under Realistic Reaction Conditions"**
+Sifat Hossain, Venkata Rohit Punyapu, Phillip Christopher and Rachel B. Getman  
+"Coverages and Configurations of CO* and H* on Pt(111) under Realistic Reaction Conditions"
 
 The processed `.pkl` files allow the manuscript figures to be regenerated without rerunning the upstream DFT, cluster-expansion, GCMC, or spatial-analysis calculations. The larger archived folders preserve the model files and representative/sampled structures used in the workflow.
 
 ## Repository Layout
 
 ```text
-FINAL_FILES/
+.
 |-- README.md
 |-- LICENSE.md
 |-- LICENSE-CODE-MIT.txt
@@ -150,13 +150,7 @@ The S7 dataset stores CO* binding energies and the experimental range using the 
 
 ## Data Availability
 
-The data and code supporting this article are available in this repository and will be archived at the following DOI after deposition:
-
-`10.XXXX/zenodo.XXXXXXX`
-
-The repository contains the processed numerical datasets underlying the main-text and supplemental figures, the corresponding figure-generation scripts, cluster-expansion inputs and outputs, archived structure files, reconstructed adsorbate configurations, GCMC-generated POSCAR snapshots, GCMC simulation code, and spatial-analysis code. GCMC simulation parameters are specified in `GCMC/GCMC_SIMULATION.py`.
-
-Update this section with the final repository URL and archival DOI after the GitHub/Zenodo record is created.
+The data and code supporting this article are available in this repository. The repository contains the processed numerical datasets underlying the main-text and supplemental figures, the corresponding figure-generation scripts, cluster-expansion inputs and outputs, archived structure files, reconstructed adsorbate configurations, GCMC-generated POSCAR snapshots, GCMC simulation code, and spatial-analysis code. GCMC simulation parameters are specified in `GCMC/GCMC_SIMULATION.py`.
 
 ## Cluster-Expansion Features
 
@@ -311,8 +305,6 @@ Datasets, figure files, structure files, documentation, and other non-code resea
 If you use the data or code in this repository, please cite the associated manuscript:
 
 > S. Hossain, V. R. Punyapu, P. Christopher and R. B. Getman, "Coverages and Configurations of CO* and H* on Pt(111) under Realistic Reaction Conditions."
-
-Repository DOI placeholder: `10.XXXX/zenodo.XXXXXXX`
 
 The complete journal citation and DOI can be added after publication.
 

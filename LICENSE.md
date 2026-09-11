@@ -12,8 +12,6 @@ Unless otherwise noted, datasets, figure files, structure files, documentation, 
 
 ## Citation
 
-Use of this repository should cite the associated manuscript and the repository DOI once available:
+Use of this repository should cite the associated manuscript:
 
-S. Hossain, V. R. Punyapu, and R. B. Getman, "Coverages and Configurations of CO* and H* on Pt(111) under Realistic Reaction Conditions."
-
-Repository DOI: `10.XXXX/zenodo.XXXXXXX`
+S. Hossain, V. R. Punyapu, P. Christopher and R. B. Getman, "Coverages and Configurations of CO* and H* on Pt(111) under Realistic Reaction Conditions."
