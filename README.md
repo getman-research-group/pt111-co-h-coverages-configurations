@@ -154,7 +154,7 @@ The data and code supporting this article are available in this repository. The 
 
 ## Cluster-Expansion Features
 
-`CE_FEATURES/` contains 26 PNG images of cluster features, named with Roman numerals from `i.png` through `xxvi.png`. These images document the cluster basis used for the cluster-expansion models.
+`CE_FEATURES/` contains 25 PNG images of cluster features, named with Roman numerals from `i.png` through `xxv.png`. These images document the cluster basis used for the cluster-expansion models.
 
 ## Cluster-Expansion Models and Archived Structures
 
