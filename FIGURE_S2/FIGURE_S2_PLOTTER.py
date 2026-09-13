@@ -331,7 +331,7 @@ def plot_binding_energy_panel(
     ax.set_ylabel(
         rf"$E_{{\mathrm{{{adsorbate}}}*}}^{{\mathrm{{ads}}}}"
         rf"(\theta_{{\mathrm{{CO}}*}},"
-        rf"\theta_{{\mathrm{{H}}*}})$ (eV)",
+        rf"\theta_{{\mathrm{{H}}*}})$ / eV",
         fontsize=AXIS_LABEL_FONT_SIZE,
     )
 

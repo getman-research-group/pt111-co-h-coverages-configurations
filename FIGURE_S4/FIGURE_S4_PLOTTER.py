@@ -88,7 +88,7 @@ line_energy, = ax1.plot(
     energy_per_site,
     color=ENERGY_COLOR,
     lw=MAIN_LINEWIDTH,
-    label=r"$E^{\mathrm{form,CE}}/N_{\mathrm{sites}}$"
+    label=r"$E^{\mathrm{form,CE}}$"
 )
 
 line_co, = ax2.plot(
@@ -122,17 +122,17 @@ ax1.axvline(
 
 ax1.set_xlabel("Number of Moves", fontsize=24)
 ax1.set_ylabel(
-    r"$E^{\mathrm{form,CE}}/N_{\mathrm{sites}}$ (eV/site)",
+    r"$E^{\mathrm{form,CE}}$ / eV/site",
     fontsize=24
 )
 
 ax2.set_ylabel(
-    r"$\theta_{\mathrm{CO}*}, \theta_{\mathrm{H}*}$ | ML",
+    r"$\theta_{\mathrm{CO}*}, \theta_{\mathrm{H}*}$ / ML",
     fontsize=24
 )
 
 ax1.set_xlim(step.min() - 600, step.max() + 600)
-ax1.set_ylim(-31.15, -24.82)
+ax1.set_ylim(-5.8, 0.5)
 ax2.set_ylim(-0.025, 0.49)
 
 ax1.tick_params(axis="both", labelsize=22)
@@ -184,11 +184,11 @@ axins.set_title("1000-Move Convergence Window", fontsize=23, pad=5)
 
 axins.set_xlabel("Number of Moves", fontsize=20)
 axins.set_ylabel(
-    r"$E^{\mathrm{form,CE}}/N_{\mathrm{sites}}$ (eV/site)",
+    r"$E^{\mathrm{form,CE}}$ / eV/site",
     fontsize=20
 )
 axins2.set_ylabel(
-    r"$\theta_{\mathrm{CO}*}, \theta_{\mathrm{H}*}$ | ML",
+    r"$\theta_{\mathrm{CO}*}, \theta_{\mathrm{H}*}$ / ML",
     fontsize=20
 )
 

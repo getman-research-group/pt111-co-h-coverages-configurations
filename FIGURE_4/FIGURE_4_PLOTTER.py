@@ -19,7 +19,7 @@ panel_a_pkl = BASE_DIR / 'FIGURE_4A_THETA_LOW.pkl'
 panel_b_pkl = BASE_DIR / 'FIGURE_4B_THETA_H.pkl'
 panel_c_pkl = BASE_DIR / 'FIGURE_4C_THETA_COH_1NN.pkl'
 
-output_path = BASE_DIR / 'FIGURE_4_SPATIAL_ANALYSIS.png'
+output_path = BASE_DIR / 'FIGURE_4.png'
 
 charges_to_plot = ["NEG", "NEU", "POS"]
 
@@ -45,12 +45,12 @@ poly_order_pairs = 2
 # ============================================================
 
 mpl.rcParams.update({
-    "font.size": 10,
-    "axes.titlesize": 12,
-    "axes.labelsize": 10,
-    "xtick.labelsize": 10,
-    "ytick.labelsize": 10,
-    "legend.fontsize": 10,
+    "font.size": 14,
+    "axes.titlesize": 14,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+    "legend.fontsize": 14,
 })
 
 # ============================================================
@@ -107,7 +107,7 @@ def plot_panel_a(ax, df):
             y,
             yerr=yerr,
             fmt="o",
-            markersize=3,
+            markersize=4,
             capsize=3,
             elinewidth=1,
             color=color,
@@ -156,7 +156,7 @@ def plot_panel_b(ax, df):
             y,
             yerr=yerr,
             fmt="o",
-            markersize=3,
+            markersize=4,
             capsize=3,
             elinewidth=1,
             color=color,
@@ -214,7 +214,7 @@ def plot_panel_c(ax, df):
             y1,
             yerr=yerr1,
             fmt="o",
-            markersize=3,
+            markersize=4,
             capsize=3,
             elinewidth=1,
             color=color,
@@ -263,7 +263,7 @@ def plot_panel_c(ax, df):
             y2,
             yerr=yerr2,
             fmt="o",
-            markersize=3,
+            markersize=4,
             capsize=3,
             elinewidth=1,
             color=color,
@@ -275,8 +275,8 @@ def plot_panel_c(ax, df):
         )
 
     ax.set_ylabel(
-        r"$\theta_{\mathrm{CO^*-H^*~1NN}}$ or "
-        r"$\theta_{\mathrm{CO}*}\theta_{\mathrm{H}*}$ / ML"
+        r"$\theta_{\mathrm{CO^*-H^*~1NN}}$, "
+        r"$\theta_{\mathrm{CO}*}\theta_{\mathrm{H}*}$ / ML",
     )
 
     ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
@@ -328,7 +328,7 @@ panel_c_df = load_dataframe_pkl(panel_c_pkl)
 fig, axes = plt.subplots(
     3,
     1,
-    figsize=(5, 9),
+    figsize=(6, 11),
     sharex=True,
     gridspec_kw={"hspace": 0.0},
 )
@@ -370,7 +370,7 @@ for ax, label in zip(axes, panel_labels):
         0.02, 0.95,
         label,
         transform=ax.transAxes,
-        fontsize=10,
+        fontsize=14,
         fontweight="bold",
         va="top",
         ha="left"
@@ -386,7 +386,7 @@ quantity_handles = [
         color="black",
         lw=1,
         marker="o",
-        markersize=3,
+        markersize=4,
         markerfacecolor="black",
         markeredgecolor="black",
         markeredgewidth=0.8,
@@ -398,7 +398,7 @@ quantity_handles = [
         color="black",
         lw=1,
         marker="o",
-        markersize=3,
+        markersize=4,
         markerfacecolor="black",
         markeredgecolor="black",
         markeredgewidth=0.8,
@@ -436,7 +436,8 @@ fig.legend(
 fig.supxlabel(
     r"$\theta_{\mathrm{CO}*}$ / ML",
     x=0.58,
-    y=0.03
+    y=0.015,
+    fontsize=14,
 )
 
 plt.subplots_adjust(

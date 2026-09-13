@@ -51,7 +51,7 @@ for ax in axes:
         linewidth=1.0
     )
 
-    ax.set_xlabel("Window width (ML)")
+    ax.set_xlabel("Window width / ML")
     ax.set_xticks(x)
     ax.set_xticklabels(
         ["0.05", "0.075", "0.1", "0.125", "0.15", "0.175", "0.2"],
@@ -61,7 +61,7 @@ for ax in axes:
     ax.tick_params(direction="in", top=True, right=True)
 
 axes[0].set_ylabel("Normalized derivative\nroughness")
-axes[1].set_ylabel("Bootstrap SD of\ninterval center (ML)")
+axes[1].set_ylabel("Bootstrap SD of\ninterval center / ML")
 
 axes[0].text(
     0.96, 0.95, "(a)",
@@ -77,17 +77,36 @@ axes[1].text(
     fontsize=20, fontweight="bold"
 )
 
+# ============================================================
+# LEGEND
+# ============================================================
+
 handles, labels = axes[0].get_legend_handles_labels()
+
+# First arrange the two panels
+plt.tight_layout(rect=[0, 0, 1, 0.94])
+
+# Find the horizontal center of the actual two-panel plot area
+left = axes[0].get_position().x0
+right = axes[1].get_position().x1
+legend_center_x = (left + right) / 2
+
+# Position legend just above the panels
+top = max(ax.get_position().y1 for ax in axes)
 
 fig.legend(
     handles,
     labels,
-    loc="upper center",
+    loc="lower center",
     ncol=3,
     frameon=False,
-    bbox_to_anchor=(0.5, 1.03)
+    bbox_to_anchor=(legend_center_x, top - 0.02)
 )
 
-plt.tight_layout(rect=[0, 0, 1, 0.93])
-plt.savefig(OUTPUT_PATH, dpi=300, bbox_inches="tight")
+plt.savefig(
+    OUTPUT_PATH,
+    dpi=300,
+    bbox_inches="tight"
+)
+
 plt.show()

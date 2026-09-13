@@ -174,16 +174,16 @@ for col, system in enumerate(SYSTEM_ORDER):
 # ============================================================
 
 fig.supxlabel(
-    r"$E_{\sigma}^{\mathrm{form,DFT}}$",
+    r"$E_{\sigma}^{\mathrm{form,DFT}}$ / eV/site",
     fontsize=24,
-    x=0.51,
+    x=0.5,
     y=0.006,
 )
 
 fig.supylabel(
-    r"$E_{\sigma}^{\mathrm{form,CE}}$",
+    r"$E_{\sigma}^{\mathrm{form,CE}}$ / eV/site",
     fontsize=24,
-    x=0.022,
+    x=0.002,
     y=0.50,
 )
 

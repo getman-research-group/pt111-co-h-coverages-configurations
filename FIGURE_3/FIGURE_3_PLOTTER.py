@@ -1,363 +1,187 @@
 import pickle
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import matplotlib.ticker as ticker
-from scipy.optimize import curve_fit
-
-# ============================================================
-# USER SETTINGS
-# ============================================================
-
 from pathlib import Path
 
-# Directory containing this script
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import numpy as np
+from scipy.optimize import curve_fit
+
+
 BASE_DIR = Path(__file__).resolve().parent
+PKL_PATH = BASE_DIR / "FIGURE_3_CO_ISLANDING_DISTRIBUTION.pkl"
+OUTPUT_PATH = BASE_DIR / "FIGURE_3.png"
 
-file_path = BASE_DIR / 'FIGURE_3_CO_ISLANDING_DISTRIBUTION.pkl'
-output_path = BASE_DIR / 'FIGURE_3_CO_ISLANDING_DISTRIBUTION.png'
+CHARGES = ["NEG", "NEU", "POS"]
+TITLES = {"NEG": "Negative", "NEU": "Neutral", "POS": "Positive"}
+FIT_RANGES = {"NEG": (0.25, 0.35), "NEU": (0.25, 0.35), "POS": (0.30, 0.40)}
 
-cmap_name = "turbo"
-use_log_color = True
+MIN_ISLAND_SIZE = 3
+MAX_ISLAND_SIZE = 550
+MIN_FRACTION = 1e-4
+TARGET_MAX_COVERAGE = 0.47
+CURVE_Y_OFFSET = 8.0
 
-visible_min_island_size = 3
-visible_max_island_size = 500
-
-# Best-fit shared x-axis range
-use_manual_xlim = False
-manual_xlim = (0.10, 0.55)
-x_padding_fraction = 0.03
-
-# Manual color limits
-use_manual_vmax = False
-manual_vmax = 0.10
-
-use_manual_vmin = False
-manual_vmin = 1e-4
-
-# Marker settings
-marker_size = 18
-marker_shape = "o"
-marker_alpha = 0.85
-
-charge_order = ["NEG", "NEU", "POS"]
-
-charge_titles = {
-    "NEG": "Negative",
-    "NEU": "Neutral",
-    "POS": "Positive"
-}
-
-fit_ranges = {
-    "NEG": (0.25, 0.35),
-    "NEU": (0.25, 0.35),
-    "POS": (0.30, 0.40)
-}
-
-curve_y_offset = 8.0
-
-# ============================================================
-# FONT SETTINGS
-# ============================================================
-
-mpl.rcParams.update({
-    "font.size": 20,
-    "axes.titlesize": 20,
-    "axes.labelsize": 20,
-    "xtick.labelsize": 20,
-    "ytick.labelsize": 20
-})
-
-# ============================================================
-# LOAD DATA
-# ============================================================
-
-with open(file_path, "rb") as f:
-    scatter_data = pickle.load(f)
-
-# ============================================================
-# GLOBAL ARRAYS FOR NORMALIZATION AND LIMITS
-# ============================================================
-
-all_x = []
-all_c = []
-
-for charge_label in charge_order:
-    data = scatter_data[charge_label]
-    X = np.asarray(data["X"], dtype=float)
-    Y = np.asarray(data["Y"], dtype=float)
-    C = np.asarray(data["C"], dtype=float)
-
-    scatter_data[charge_label] = {
-        "X": X,
-        "Y": Y,
-        "C": C
+mpl.rcParams.update(
+    {
+        "font.size": 14,
+        "axes.titlesize": 14,
+        "axes.labelsize": 14,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
     }
+)
 
-    if len(X) > 0:
-        all_x.extend(X)
-        all_c.extend(C)
 
-all_x = np.array(all_x, dtype=float)
-all_c = np.array(all_c, dtype=float)
+def exp_model(theta, a, b, c, theta0):
+    return a * np.exp(b * (theta - theta0)) + c
 
-if len(all_x) == 0:
-    raise ValueError("No scatter points found in the PKL file.")
 
-# ============================================================
-# BEST-FIT COMMON X-RANGE AND COLOR NORMALIZATION
-# ============================================================
+def largest_island_envelope(x, y):
+    unique_x = np.array(sorted(np.unique(x)))
+    return unique_x, np.array([np.max(y[np.isclose(x, x0)]) for x0 in unique_x])
 
-if use_manual_xlim:
-    x_min, x_max = manual_xlim
-else:
-    x_min = np.nanmin(all_x)
-    x_max = np.nanmax(all_x)
 
-    x_range = x_max - x_min
-    x_pad = x_padding_fraction * x_range
+def load_scatter_data():
+    with open(PKL_PATH, "rb") as f:
+        raw = pickle.load(f)
 
-    x_min = x_min - x_pad
-    x_max = x_max + x_pad
+    scatter = {}
+    all_x, all_c = [], []
 
-if use_log_color:
-    vmin = manual_vmin if use_manual_vmin else np.nanmin(all_c)
-    vmax = manual_vmax if use_manual_vmax else np.nanmax(all_c)
+    for charge in CHARGES:
+        x = np.asarray(raw[charge]["X"], dtype=float)
+        y = np.asarray(raw[charge]["Y"], dtype=float)
+        c_raw = np.asarray(raw[charge]["C"], dtype=float)
 
-    norm = mpl.colors.LogNorm(
-        vmin=vmin,
-        vmax=vmax
+        keep = (
+            np.isfinite(x)
+            & np.isfinite(y)
+            & np.isfinite(c_raw)
+            & (y >= MIN_ISLAND_SIZE)
+            & (y <= MAX_ISLAND_SIZE)
+            & (c_raw >= MIN_FRACTION)
+        )
+
+        x = x[keep]
+        y = y[keep]
+        c = np.log10(c_raw[keep])
+
+        scatter[charge] = {"x": x, "y": y, "c": c}
+        all_x.append(x)
+        all_c.append(c)
+
+    all_x = np.concatenate(all_x)
+    all_c = np.concatenate(all_c)
+    coverage_offset = TARGET_MAX_COVERAGE - np.max(all_x)
+
+    for charge in CHARGES:
+        scatter[charge]["x"] = scatter[charge]["x"] + coverage_offset
+
+    return scatter, all_c
+
+
+def add_fit(ax, x, y, charge):
+    largest_x, largest_y = largest_island_envelope(x, y)
+    x0, x1 = FIT_RANGES[charge]
+    fit_mask = (largest_x >= x0) & (largest_x <= x1)
+    x_fit = largest_x[fit_mask]
+    y_fit = largest_y[fit_mask]
+
+    if len(x_fit) < 4:
+        return
+
+    theta0 = x0
+    c_guess = max(0, np.min(y_fit) - 10)
+    a_guess = max(1, y_fit[0] - c_guess)
+
+    popt, _ = curve_fit(
+        lambda theta, a, b, c: exp_model(theta, a, b, c, theta0),
+        x_fit,
+        y_fit,
+        p0=[a_guess, 20.0, c_guess],
+        maxfev=20000,
     )
-else:
-    vmin = 0
-    vmax = manual_vmax if use_manual_vmax else np.nanmax(all_c)
 
-    norm = mpl.colors.Normalize(
-        vmin=vmin,
-        vmax=vmax
+    a, b, c = popt
+    x_curve = np.linspace(x_fit.min(), x_fit.max(), 300)
+    y_curve = exp_model(x_curve, a, b, c, theta0)
+    y_pred = exp_model(x_fit, a, b, c, theta0)
+    ss_res = np.sum((y_fit - y_pred) ** 2)
+    ss_tot = np.sum((y_fit - np.mean(y_fit)) ** 2)
+    r2 = 1 - ss_res / ss_tot if ss_tot > 0 else np.nan
+
+    ax.plot(x_curve, y_curve + CURVE_Y_OFFSET, color="black", lw=1, zorder=12)
+    ax.plot(x_curve, y_curve + CURVE_Y_OFFSET, color="black", lw=2, ls="--", zorder=14)
+    ax.text(
+        0.03,
+        0.97,
+        (
+            rf"$n_{{\mathrm{{max}}}}={a:.1f}"
+            rf"e^{{{b:.1f}(\theta_{{\mathrm{{CO}}*}}-{theta0:.2f})}}$"
+            rf"$ {c:+.1f}$"
+            "\n"
+            rf"$R^2={r2:.3f}$"
+            "\n"
+            rf"$N_{{\mathrm{{bins}}}}={len(x_fit)}$"
+        ),
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=14,
+        zorder=100,
     )
 
-cmap = plt.get_cmap(cmap_name)
 
-# ============================================================
-# HELPER FUNCTION
-# ============================================================
+scatter_data, all_colors = load_scatter_data()
+norm = mpl.colors.Normalize(vmin=np.min(all_colors), vmax=np.max(all_colors))
+cmap = plt.get_cmap("turbo")
 
-def exp_model(theta, A, B, C, theta0):
-    return A * np.exp(B * (theta - theta0)) + C
-
-# ============================================================
-# MAKE ONE COMBINED IMAGE FOR ALL THREE CHARGES
-# WITH A SAME-HEIGHT COLORBAR IN THE SAME FIGURE
-# ============================================================
-
-fig = plt.figure(figsize=(19.0, 6.5))
-
+fig = plt.figure(figsize=(11.67, 6))
 gs = fig.add_gridspec(
     nrows=1,
     ncols=5,
-    width_ratios=[1.0, 1.0, 1.0, 0.08, 0.055],
-    wspace=0.0
+    width_ratios=[1, 1, 1, 0.08, 0.055],
+    wspace=0.0,
 )
-
-axes = [
-    fig.add_subplot(gs[0, 0]),
-    fig.add_subplot(gs[0, 1]),
-    fig.add_subplot(gs[0, 2])
-]
+axes = [fig.add_subplot(gs[0, i]) for i in range(3)]
+cbar_ax = fig.add_subplot(gs[0, 4])
 
 axes[1].sharey(axes[0])
 axes[2].sharey(axes[0])
-
-cbar_ax = fig.add_subplot(gs[0, 4])
-
-fig.subplots_adjust(
-    left=0.055,
-    right=0.920,
-    bottom=0.18,
-    top=0.88
-)
+fig.subplots_adjust(left=0.055, right=0.920, bottom=0.18, top=0.88)
 
 for ax in axes[1:]:
     ax.tick_params(labelleft=False)
 
-for ax, charge_label in zip(axes, charge_order):
+for ax, charge in zip(axes, CHARGES):
+    data = scatter_data[charge]
+    x, y, c = data["x"], data["y"], data["c"]
 
-    data = scatter_data[charge_label]
+    ax.scatter(x, y, c=c, s=20, cmap=cmap, norm=norm, alpha=0.85, edgecolors="none")
+    add_fit(ax, x, y, charge)
 
-    X = data["X"]
-    Y = data["Y"]
-    C = data["C"]
-
-    ax.scatter(
-        X,
-        Y,
-        c=C,
-        s=marker_size,
-        marker=marker_shape,
-        cmap=cmap,
-        norm=norm,
-        alpha=marker_alpha,
-        edgecolors="none",
-        zorder=2
-    )
-
-    # ========================================================
-    # Largest island size for each coverage bin
-    # ========================================================
-
-    unique_x = np.array(sorted(np.unique(X)))
-
-    largest_x = []
-    largest_y = []
-
-    for xval in unique_x:
-        mask = np.isclose(X, xval)
-
-        if not np.any(mask):
-            continue
-
-        largest_x.append(xval)
-        largest_y.append(np.nanmax(Y[mask]))
-
-    largest_x = np.array(largest_x)
-    largest_y = np.array(largest_y)
-
-    # ========================================================
-    # Select fit range
-    # ========================================================
-
-    x0, x1 = fit_ranges[charge_label]
-
-    fit_mask = (
-        (largest_x >= x0) &
-        (largest_x <= x1)
-    )
-
-    x_fit = largest_x[fit_mask]
-    y_fit = largest_y[fit_mask]
-
-    # ========================================================
-    # Exponential fit
-    # ========================================================
-
-    if len(x_fit) >= 4:
-
-        theta0 = x0
-
-        C0_guess = max(0, np.min(y_fit) - 10)
-        A0 = max(1, y_fit[0] - C0_guess)
-        B0 = 20.0
-
-        try:
-            popt, pcov = curve_fit(
-                lambda theta, A, B, C0_fit: exp_model(
-                    theta, A, B, C0_fit, theta0
-                ),
-                x_fit,
-                y_fit,
-                p0=[A0, B0, C0_guess],
-                maxfev=20000
-            )
-
-            A, B, Cfit = popt
-
-            x_curve = np.linspace(x_fit.min(), x_fit.max(), 300)
-            y_curve = exp_model(x_curve, A, B, Cfit, theta0)
-
-            y_pred = exp_model(x_fit, A, B, Cfit, theta0)
-
-            ss_res = np.sum((y_fit - y_pred) ** 2)
-            ss_tot = np.sum((y_fit - np.mean(y_fit)) ** 2)
-            r2 = 1 - ss_res / ss_tot if ss_tot > 0 else np.nan
-
-            eq_text = (
-                rf"$n_{{\mathrm{{max}}}}={A:.1f}"
-                rf"e^{{{B:.1f}(\theta_{{\mathrm{{CO}}*}}-{theta0:.2f})}}"
-                rf"{Cfit:+.1f}$"
-                "\n"
-                rf"$R^2={r2:.3f}$"
-            )
-
-            ax.text(
-                0.03, 0.97,
-                eq_text,
-                transform=ax.transAxes,
-                ha="left",
-                va="top",
-                fontsize=20,
-                bbox=dict(
-                    facecolor="white",
-                    edgecolor="none",
-                    alpha=0.75,
-                    pad=0.3
-                ),
-                zorder=100
-            )
-
-            ax.plot(
-                x_curve,
-                y_curve + curve_y_offset,
-                color="black",
-                linewidth=0.5,
-                linestyle="-",
-                zorder=30
-            )
-
-            ax.plot(
-                x_curve,
-                y_curve + curve_y_offset,
-                color="black",
-                linewidth=2.0,
-                linestyle="--",
-                zorder=31
-            )
-
-        except RuntimeError:
-            pass
-
-    local_x_min = np.nanmin(X)
-    local_x_max = np.nanmax(X)
-
-    local_x_range = local_x_max - local_x_min
-    local_x_pad = x_padding_fraction * local_x_range
-
-    ax.set_title(charge_titles[charge_label], pad=10)
-    ax.set_xlim(
-        local_x_min - local_x_pad,
-        local_x_max + local_x_pad
-    )
-    ax.set_ylim(
-        visible_min_island_size,
-        visible_max_island_size
-    )
+    x_pad = 0.03 * (np.max(x) - np.min(x))
+    ax.set_title(TITLES[charge], pad=10)
+    ax.set_xlim(np.min(x) - x_pad, np.max(x) + x_pad)
+    ax.set_ylim(MIN_ISLAND_SIZE, MAX_ISLAND_SIZE)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(0.1))
     ax.tick_params(direction="in", length=5, width=1)
 
 axes[0].set_ylabel(r"$n$", labelpad=4)
-fig.supxlabel(r"$\theta_{\mathrm{CO}*}$", x=0.47, y=0.055)
+fig.supxlabel(r"$\theta_{\mathrm{CO}*}$ / ML", x=0.47, y=0.07)
 
-# ============================================================
-# SHARED COLORBAR IN THE SAME FIGURE
-# ============================================================
-
-sm = mpl.cm.ScalarMappable(
-    cmap=cmap,
-    norm=norm
+cbar = fig.colorbar(mpl.cm.ScalarMappable(cmap=cmap, norm=norm), cax=cbar_ax)
+cbar.set_ticks(np.arange(np.ceil(norm.vmin), np.floor(norm.vmax) + 1, 1))
+cbar.ax.text(
+    0.5,
+    -0.08,
+    r"$\log(\chi_n)$",
+    ha="center",
+    va="top",
+    transform=cbar.ax.transAxes,
+    fontsize=17,
 )
-sm.set_array([])
-
-cbar = fig.colorbar(
-    sm,
-    cax=cbar_ax
-)
-
-cbar.set_label(r"$\chi_n$", labelpad=8)
 cbar.ax.tick_params(direction="in", length=5, width=1)
 
-fig.savefig(
-    output_path,
-    dpi=300
-)
-
-plt.close(fig)
+fig.savefig(OUTPUT_PATH, bbox_inches="tight", dpi=300)

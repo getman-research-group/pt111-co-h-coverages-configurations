@@ -43,7 +43,7 @@ ax.axhspan(
     label="Experimental Range"
 )
 
-ax.set_ylabel("CO* Binding Energy (eV)", fontsize=20)
+ax.set_ylabel("CO* Binding Energy / eV", fontsize=20)
 ax.set_ylim(-2.0, 0.0)
 
 ax.xaxis.tick_top()
