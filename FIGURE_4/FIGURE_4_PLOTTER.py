@@ -1,329 +1,137 @@
 import pickle
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from matplotlib.ticker import FormatStrFormatter
-from matplotlib.lines import Line2D
-
-# ============================================================
-# USER SETTINGS
-# ============================================================
-
 from pathlib import Path
 
-# Directory containing this script
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.lines import Line2D
+from matplotlib.ticker import FormatStrFormatter
+
+
 BASE_DIR = Path(__file__).resolve().parent
+PANEL_A_PKL = BASE_DIR / "FIGURE_4A_THETA_LOW.pkl"
+PANEL_B_PKL = BASE_DIR / "FIGURE_4B_THETA_H.pkl"
+PANEL_C_PKL = BASE_DIR / "FIGURE_4C_THETA_COH_1NN.pkl"
+OUTPUT_PATH = BASE_DIR / "FIGURE_4.png"
 
-panel_a_pkl = BASE_DIR / 'FIGURE_4A_THETA_LOW.pkl'
-panel_b_pkl = BASE_DIR / 'FIGURE_4B_THETA_H.pkl'
-panel_c_pkl = BASE_DIR / 'FIGURE_4C_THETA_COH_1NN.pkl'
+CHARGES = ["NEG", "NEU", "POS"]
+COLORS = {"NEG": "#0072B2", "NEU": "#000000", "POS": "#E69F00"}
+LABELS = {"NEG": "Negative", "NEU": "Neutral", "POS": "Positive"}
+POLY_ORDER = {"low": 1, "h": 3, "pairs": 2}
 
-output_path = BASE_DIR / 'FIGURE_4.png'
-
-charges_to_plot = ["NEG", "NEU", "POS"]
-
-charge_colors = {
-    "NEG": "#0072B2",   # Blue
-    "NEU": "#000000",   # Black
-    "POS": "#E69F00",   # Orange
-}
-
-charge_labels = {
-    "NEG": "Negative",
-    "NEU": "Neutral",
-    "POS": "Positive",
-}
+mpl.rcParams.update(
+    {
+        "font.size": 14,
+        "axes.titlesize": 14,
+        "axes.labelsize": 14,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 14,
+    }
+)
 
 
-poly_order_empty = 1
-poly_order_h = 3
-poly_order_pairs = 2
+def load_dataframe_pkl(path):
+    with open(path, "rb") as f:
+        obj = pickle.load(f)
 
-# ============================================================
-# FONT SETTINGS
-# ============================================================
+    if isinstance(obj, dict) and obj.get("__type__") == "DataFrame":
+        return pd.DataFrame(obj["data"], columns=obj["columns"], index=obj.get("index"))
+    if isinstance(obj, pd.DataFrame):
+        return obj.copy()
+    return pd.DataFrame(obj)
 
-mpl.rcParams.update({
-    "font.size": 14,
-    "axes.titlesize": 14,
-    "axes.labelsize": 14,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
-    "legend.fontsize": 14,
-})
-
-# ============================================================
-# FUNCTIONS
-# ============================================================
 
 def fit_polynomial(x, y, order):
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
-
-    mask = np.isfinite(x) & np.isfinite(y)
-    x = x[mask]
-    y = y[mask]
-
-    if len(x) <= order:
+    keep = np.isfinite(x) & np.isfinite(y)
+    if np.sum(keep) <= order:
         return None
-
-    coeffs = np.polyfit(x, y, order)
-    return np.poly1d(coeffs)
+    return np.poly1d(np.polyfit(x[keep], y[keep], order))
 
 
-def plot_panel_a(ax, df):
-    for charge in charges_to_plot:
-        plot_df = df[df["Charge"] == charge].copy()
-        plot_df = plot_df.sort_values("CO_Coverage")
+def plot_series(ax, x, y, yerr, color, alpha=1.0, label=None, order=1, zorder=3):
+    poly = fit_polynomial(x, y, order)
+    x_fit = np.linspace(np.min(x), np.max(x), 300) if poly is not None else x
+    y_fit = poly(x_fit) if poly is not None else y
 
-        x = plot_df["CO_Coverage"].to_numpy(dtype=float)
-        y = plot_df["Y_Plot"].to_numpy(dtype=float)
-        yerr_lower = plot_df["Y_Error_Low"].to_numpy(dtype=float)
-        yerr_upper = plot_df["Y_Error_High"].to_numpy(dtype=float)
-        yerr = np.vstack([yerr_lower, yerr_upper])
+    ax.plot(x_fit, y_fit, lw=1, color=color, alpha=alpha, label=label, zorder=zorder)
+    ax.errorbar(
+        x,
+        y,
+        yerr=yerr,
+        fmt="o",
+        markersize=4,
+        capsize=3,
+        elinewidth=1,
+        color=color,
+        alpha=alpha,
+        markerfacecolor=color,
+        markeredgecolor="black",
+        markeredgewidth=0.8,
+        zorder=zorder + 1,
+    )
 
-        color = charge_colors[charge]
 
-        poly = fit_polynomial(x, y, poly_order_empty)
-
-        if poly is None:
-            x_fit = x
-            y_fit = y
-        else:
-            x_fit = np.linspace(np.min(x), np.max(x), 300)
-            y_fit = poly(x_fit)
-
-        ax.plot(
-            x_fit,
-            y_fit,
-            linewidth=1,
-            color=color,
-            label=charge_labels[charge],
+def plot_single_quantity_panel(ax, df, ylabel, order):
+    for charge in CHARGES:
+        part = df[df["Charge"] == charge].sort_values("CO_Coverage")
+        x = part["CO_Coverage"].to_numpy(dtype=float)
+        y = part["Y_Plot"].to_numpy(dtype=float)
+        yerr = np.vstack(
+            [
+                part["Y_Error_Low"].to_numpy(dtype=float),
+                part["Y_Error_High"].to_numpy(dtype=float),
+            ]
         )
+        plot_series(ax, x, y, yerr, COLORS[charge], label=LABELS[charge], order=order)
 
-        ax.errorbar(
-            x,
-            y,
-            yerr=yerr,
-            fmt="o",
-            markersize=4,
-            capsize=3,
-            elinewidth=1,
-            color=color,
-            markerfacecolor=color,
-            markeredgecolor="black",
-            markeredgewidth=0.8,
-            zorder=3,
-        )
-
-    ax.set_ylabel(r"$\theta_{low}$ / ML")
-    ax.grid(False)
-
-
-def plot_panel_b(ax, df):
-    for charge in charges_to_plot:
-        plot_df = df[df["Charge"] == charge].copy()
-        plot_df = plot_df.sort_values("CO_Coverage")
-
-        x = plot_df["CO_Coverage"].to_numpy(dtype=float)
-        y = plot_df["Y_Plot"].to_numpy(dtype=float)
-        yerr_lower = plot_df["Y_Error_Low"].to_numpy(dtype=float)
-        yerr_upper = plot_df["Y_Error_High"].to_numpy(dtype=float)
-        yerr = np.vstack([yerr_lower, yerr_upper])
-
-        color = charge_colors[charge]
-
-        poly = fit_polynomial(x, y, poly_order_h)
-
-        if poly is None:
-            x_fit = x
-            y_fit = y
-        else:
-            x_fit = np.linspace(np.min(x), np.max(x), 300)
-            y_fit = poly(x_fit)
-
-        ax.plot(
-            x_fit,
-            y_fit,
-            linewidth=1,
-            color=color,
-            label=charge_labels[charge],
-        )
-
-        ax.errorbar(
-            x,
-            y,
-            yerr=yerr,
-            fmt="o",
-            markersize=4,
-            capsize=3,
-            elinewidth=1,
-            color=color,
-            markerfacecolor=color,
-            markeredgecolor="black",
-            markeredgewidth=0.8,
-            zorder=3,
-        )
-
-    ax.set_ylabel(r"$\theta_{\mathrm{H}*}$ / ML")
+    ax.set_ylabel(ylabel)
     ax.grid(False)
 
 
 def plot_panel_c(ax, df):
-    for charge in charges_to_plot:
-        color = charge_colors[charge]
-        charge_name = charge_labels[charge]
+    ax2 = ax.twinx()
 
-        # ----------------------------------------------------
-        # CO_H_1NN
-        # ----------------------------------------------------
-        df_1nn = df[
-            (df["Charge"] == charge) &
-            (df["Quantity"] == "CO_H_1NN")
-        ].copy().sort_values("CO_Coverage")
+    for charge in CHARGES:
+        color = COLORS[charge]
 
-        x1 = df_1nn["CO_Coverage"].to_numpy(dtype=float)
-        y1 = df_1nn["Y_Plot"].to_numpy(dtype=float)
-        yerr1_lower = df_1nn["Y_Error_Low"].to_numpy(dtype=float)
-        yerr1_upper = df_1nn["Y_Error_High"].to_numpy(dtype=float)
-        yerr1 = np.vstack([yerr1_lower, yerr1_upper])
+        for quantity, target_ax, alpha, order, zorder in [
+            ("CO_H_1NN", ax, 1.0, POLY_ORDER["pairs"], 3),
+            ("CO_times_H", ax2, 0.35, POLY_ORDER["pairs"], 1),
+        ]:
+            part = df[
+                (df["Charge"] == charge) & (df["Quantity"] == quantity)
+            ].sort_values("CO_Coverage")
+            x = part["CO_Coverage"].to_numpy(dtype=float)
+            y = part["Y_Plot"].to_numpy(dtype=float)
+            yerr = np.vstack(
+                [
+                    part["Y_Error_Low"].to_numpy(dtype=float),
+                    part["Y_Error_High"].to_numpy(dtype=float),
+                ]
+            )
+            plot_series(target_ax, x, y, yerr, color, alpha=alpha, order=order, zorder=zorder)
 
-        poly1 = fit_polynomial(x1, y1, poly_order_pairs)
+    ax.set_ylabel(r"$\theta_{\mathrm{CO^*-H^*~1NN}}$ / ML")
+    ax2.set_ylabel(r"$\theta_{\mathrm{CO}*}\theta_{\mathrm{H}*}$ / ML$^2$")
 
-        if poly1 is None:
-            x1_fit = x1
-            y1_fit = y1
-        else:
-            x1_fit = np.linspace(np.min(x1), np.max(x1), 300)
-            y1_fit = poly1(x1_fit)
-
-        ax.plot(
-            x1_fit,
-            y1_fit,
-            linewidth=1,
-            color=color,
-            alpha=1.0,
-            linestyle="-",
-            label=charge_name,
-            zorder=3,
-        )
-
-        ax.errorbar(
-            x1,
-            y1,
-            yerr=yerr1,
-            fmt="o",
-            markersize=4,
-            capsize=3,
-            elinewidth=1,
-            color=color,
-            alpha=1.0,
-            markerfacecolor=color,
-            markeredgecolor="black",
-            markeredgewidth=0.8,
-            zorder=4,
-        )
-
-        # ----------------------------------------------------
-        # CO_times_H
-        # ----------------------------------------------------
-        df_prod = df[
-            (df["Charge"] == charge) &
-            (df["Quantity"] == "CO_times_H")
-        ].copy().sort_values("CO_Coverage")
-
-        x2 = df_prod["CO_Coverage"].to_numpy(dtype=float)
-        y2 = df_prod["Y_Plot"].to_numpy(dtype=float)
-        yerr2_lower = df_prod["Y_Error_Low"].to_numpy(dtype=float)
-        yerr2_upper = df_prod["Y_Error_High"].to_numpy(dtype=float)
-        yerr2 = np.vstack([yerr2_lower, yerr2_upper])
-
-        poly2 = fit_polynomial(x2, y2, poly_order_pairs)
-
-        if poly2 is None:
-            x2_fit = x2
-            y2_fit = y2
-        else:
-            x2_fit = np.linspace(np.min(x2), np.max(x2), 300)
-            y2_fit = poly2(x2_fit)
-
-        ax.plot(
-            x2_fit,
-            y2_fit,
-            linewidth=1,
-            color=color,
-            alpha=0.35,
-            linestyle="-",
-            zorder=1,
-        )
-
-        ax.errorbar(
-            x2,
-            y2,
-            yerr=yerr2,
-            fmt="o",
-            markersize=4,
-            capsize=3,
-            elinewidth=1,
-            color=color,
-            alpha=0.35,
-            markerfacecolor=color,
-            markeredgecolor="black",
-            markeredgewidth=0.8,
-            zorder=2,
-        )
-
-    ax.set_ylabel(
-        r"$\theta_{\mathrm{CO^*-H^*~1NN}}$, "
-        r"$\theta_{\mathrm{CO}*}\theta_{\mathrm{H}*}$ / ML",
-    )
+    ax.set_ylim(0.00, 0.14)
+    ax.set_yticks(np.arange(0.00, 0.12 + 0.001, 0.04))
+    ax2.set_ylim(0.00, 0.14)
+    ax2.set_yticks(np.arange(0.00, 0.12 + 0.001, 0.04))
 
     ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+    ax2.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
     ax.grid(False)
+    return ax2
 
 
-# ============================================================
-# LOAD DATA
-# ============================================================
-
-def load_dataframe_pkl(path):
-    """
-    Load either:
-    1. the portable DataFrame PKL format, or
-    2. a normal pandas DataFrame PKL.
-    """
-    with open(path, "rb") as f:
-        obj = pickle.load(f)
-
-    # Portable DataFrame format
-    if (
-        isinstance(obj, dict)
-        and obj.get("__type__") == "DataFrame"
-        and "columns" in obj
-        and "data" in obj
-    ):
-        return pd.DataFrame(
-            obj["data"],
-            columns=obj["columns"],
-            index=obj.get("index", None)
-        )
-
-    # Normal pandas DataFrame
-    if isinstance(obj, pd.DataFrame):
-        return obj.copy()
-
-    # Fallback
-    return pd.DataFrame(obj)
-
-
-panel_a_df = load_dataframe_pkl(panel_a_pkl)
-panel_b_df = load_dataframe_pkl(panel_b_pkl)
-panel_c_df = load_dataframe_pkl(panel_c_pkl)
-
-# ============================================================
-# PLOT
-# ============================================================
+panel_a_df = load_dataframe_pkl(PANEL_A_PKL)
+panel_b_df = load_dataframe_pkl(PANEL_B_PKL)
+panel_c_df = load_dataframe_pkl(PANEL_C_PKL)
 
 fig, axes = plt.subplots(
     3,
@@ -333,56 +141,41 @@ fig, axes = plt.subplots(
     gridspec_kw={"hspace": 0.0},
 )
 
-plot_panel_a(axes[0], panel_a_df)
-plot_panel_b(axes[1], panel_b_df)
-plot_panel_c(axes[2], panel_c_df)
+plot_single_quantity_panel(axes[0], panel_a_df, r"$\theta_{low}$ / ML", POLY_ORDER["low"])
+plot_single_quantity_panel(axes[1], panel_b_df, r"$\theta_{\mathrm{H}*}$ / ML", POLY_ORDER["h"])
+panel_c_right_ax = plot_panel_c(axes[2], panel_c_df)
 
-# Set exact y-axis limits and ticks
 axes[0].set_ylim(0.00, 0.16)
 axes[0].set_yticks(np.arange(0.02, 0.14 + 0.001, 0.04))
-
 axes[1].set_ylim(0.12, 0.44)
 axes[1].set_yticks(np.arange(0.16, 0.42 + 0.001, 0.08))
 
-axes[2].set_ylim(0.00, 0.14)
-axes[2].set_yticks(np.arange(0.00, 0.12 + 0.001, 0.04))
-
 for ax in axes:
     ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
-
-# Remove individual legends from all panels
-for ax in axes:
-    leg = ax.get_legend()
-    if leg is not None:
-        leg.remove()
     ax.set_xlabel("")
+    ax.tick_params(direction="in", length=5, width=1)
+
+panel_c_right_ax.tick_params(direction="in", length=5, width=1)
 
 for ax in axes[:-1]:
     ax.tick_params(labelbottom=False)
 
-
-
-# Panel labels
-panel_labels = ["a)", "b)", "c)"]
-
-for ax, label in zip(axes, panel_labels):
+for ax, label in zip(axes, ["a)", "b)", "c)"]):
     ax.text(
-        0.02, 0.95,
+        0.02,
+        0.95,
         label,
         transform=ax.transAxes,
         fontsize=14,
         fontweight="bold",
         va="top",
-        ha="left"
+        ha="left",
     )
-
-# ============================================================
-# Panel c legend (quantities)
-# ============================================================
 
 quantity_handles = [
     Line2D(
-        [0], [0],
+        [0],
+        [0],
         color="black",
         lw=1,
         marker="o",
@@ -394,7 +187,8 @@ quantity_handles = [
         label=r"$\theta_{\mathrm{CO^*-H^*~1NN}}$",
     ),
     Line2D(
-        [0], [0],
+        [0],
+        [0],
         color="black",
         lw=1,
         marker="o",
@@ -406,7 +200,6 @@ quantity_handles = [
         label=r"$\theta_{\mathrm{CO}*}\theta_{\mathrm{H}*}$",
     ),
 ]
-
 axes[2].legend(
     handles=quantity_handles,
     loc="lower right",
@@ -417,38 +210,19 @@ axes[2].legend(
     handletextpad=0.5,
 )
 
-# Central legend above all panels
-handles = [
-    Line2D([0], [0], color=charge_colors[c], lw=2)
-    for c in charges_to_plot
-]
-labels = [charge_labels[c] for c in charges_to_plot]
-
 fig.legend(
-    handles,
-    labels,
+    [Line2D([0], [0], color=COLORS[c], lw=2) for c in CHARGES],
+    [LABELS[c] for c in CHARGES],
     loc="upper center",
-    bbox_to_anchor=(0.58, 0.975),
+    bbox_to_anchor=(0.50, 0.975),
     ncol=3,
     frameon=False,
 )
 
-fig.supxlabel(
-    r"$\theta_{\mathrm{CO}*}$ / ML",
-    x=0.58,
-    y=0.015,
-    fontsize=14,
-)
+fig.supxlabel(r"$\theta_{\mathrm{CO}*}$ / ML", x=0.50, y=0.015, fontsize=14)
 
-plt.subplots_adjust(
-    left=0.18,
-    right=0.98,
-    bottom=0.08,
-    top=0.93,
-    hspace=0.0,
-)
+plt.subplots_adjust(left=0.18, right=0.84, bottom=0.08, top=0.93, hspace=0.0)
+plt.savefig(OUTPUT_PATH, dpi=300, bbox_inches="tight")
+plt.close(fig)
 
-plt.savefig(output_path, dpi=300, bbox_inches="tight")
-plt.show()
-
-print(f"Saved figure: {output_path}")
+print(f"Saved figure: {OUTPUT_PATH}")
