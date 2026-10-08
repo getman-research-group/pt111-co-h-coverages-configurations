@@ -1,5 +1,7 @@
 # Coverages and Configurations of CO* and H* on Pt(111) under Realistic Reaction Conditions
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23230395.svg)](https://doi.org/10.5281/zenodo.23230395)
+
 This repository contains the figure-generation scripts, processed plotting datasets, cluster-expansion files, grand canonical Monte Carlo (GCMC) simulation code, GCMC snapshots, and spatial-analysis utilities associated with the manuscript:
 
 Sifat Hossain, Venkata Rohit Punyapu, Phillip Christopher and Rachel B. Getman  
@@ -150,7 +152,7 @@ The S7 dataset stores CO* binding energies and the experimental range using the 
 
 ## Data Availability
 
-The data and code supporting this article are available in this repository. The repository contains the processed numerical datasets underlying the main-text and supplemental figures, the corresponding figure-generation scripts, cluster-expansion inputs and outputs, archived structure files, reconstructed adsorbate configurations, GCMC-generated POSCAR snapshots, GCMC simulation code, and spatial-analysis code. GCMC simulation parameters are specified in `GCMC/GCMC_SIMULATION.py`.
+The archived data and code supporting this article are available on Zenodo at https://doi.org/10.5281/zenodo.23230395. The development repository is available at https://github.com/getman-research-group/pt111-co-h-coverages-configurations. The repository contains the processed numerical datasets underlying the main-text and supplemental figures, the corresponding figure-generation scripts, cluster-expansion inputs and outputs, archived structure files, reconstructed adsorbate configurations, GCMC-generated POSCAR snapshots, GCMC simulation code, and spatial-analysis code. GCMC simulation parameters are specified in `GCMC/GCMC_SIMULATION.py`.
 
 ## Cluster-Expansion Features
 
@@ -302,7 +304,11 @@ Datasets, figure files, structure files, documentation, and other non-code resea
 
 ## Citation
 
-If you use the data or code in this repository, please cite the associated manuscript:
+If you use the data or code in this repository, please cite the archived Zenodo record:
+
+> S. Hossain and R. B. Getman, *pt111-co-h-coverages-configurations*, Zenodo, 2026, https://doi.org/10.5281/zenodo.23230395.
+
+Please also cite the associated manuscript:
 
 > S. Hossain, V. R. Punyapu, P. Christopher and R. B. Getman, "Coverages and Configurations of CO* and H* on Pt(111) under Realistic Reaction Conditions."
 

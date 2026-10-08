@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this data or code, please cite the archived Zenodo record."
+title: "pt111-co-h-coverages-configurations"
+authors:
+  - family-names: Hossain
+    given-names: Sifat
+  - family-names: Getman
+    given-names: Rachel B.
+doi: 10.5281/zenodo.23230395
+url: "https://github.com/getman-research-group/pt111-co-h-coverages-configurations"
+repository-code: "https://github.com/getman-research-group/pt111-co-h-coverages-configurations"
+date-released: 2026-10-08
+version: "Version_1.0.0_Pt(111)_CO_H"
+license: "CC-BY-4.0"
