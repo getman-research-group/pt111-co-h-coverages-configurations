@@ -26,7 +26,8 @@ The processed `.pkl` files allow the manuscript figures to be regenerated withou
 |-- FIGURE_S3/
 |-- FIGURE_S4/
 |-- FIGURE_S5/
-|-- FIGURE_S7/
+|-- FIGURE_S6/
+|-- FIGURE_S8/
 |-- GCMC/
 |-- GSCs/
 |-- RECON_SORTED/
@@ -75,10 +76,13 @@ Each figure folder contains a Python plotter and the processed `.pkl` dataset or
 | `FIGURE_S2/` | `FIGURE_S2_PLOTTER.py`, `FIGURE_S2_PRE_COVERAGE_BINDING_ENERGY.pkl` | Supplemental pre-coverage-dependent CO*/H* binding-energy data. |
 | `FIGURE_S3/` | `FIGURE_S3_PLOTTER.py`, `FIGURE_S3_WINDOW_SENSITIVITY.pkl` | Supplemental window-width sensitivity data. |
 | `FIGURE_S4/` | `FIGURE_S4_PLOTTER.py`, `FIGURE_S4_GCMC_EQUILIBRATION.pkl`, `FIGURE_S4.png` | Supplemental GCMC equilibration trace and convergence-window statistics. |
-| `FIGURE_S5/` | `FIGURE_S5_PLOTTER.py`, `FIGURE_S5_PARITY.pkl`, `FIGURE_S5.png` | Supplemental cluster-expansion parity plots for training/testing data across charge states. |
-| `FIGURE_S7/` | `FIGURE_S7_PLOTTER.py`, `FIGURE_S7_FUNCTIONALS.pkl`, `FIGURE_S7.png` | Supplemental comparison of CO* binding energies across density functionals and dispersion corrections. |
+| `FIGURE_S5/` | `FIGURE_S5_PLOTTER.py`, `FIGURE_S5_GCMC_LATTICE_COMPARISON.pkl` | Synthetic lattice-size comparison of CO*/H* coverage and energy relaxation for 17x17, 30x30, and 43x43 lattices. |
+| `FIGURE_S6/` | `FIGURE_S6_PLOTTER.py`, `FIGURE_S6_PARITY.pkl` | Supplemental cluster-expansion parity plots for training/testing data across charge states. |
+| `FIGURE_S8/` | `FIGURE_S8_PLOTTER.py`, `FIGURE_S8_FUNCTIONALS.pkl` | Supplemental comparison of CO* binding energies across density functionals and dispersion corrections. |
 
-There is no `FIGURE_S6/` directory in the current archive.
+There is no `FIGURE_S7/` directory in the current archive.
+
+Figures S5, S6, and S8 include only the plotter and its processed dataset. Their PNG files are generated locally by running the plotters; the S5 Excel source workbook is not required or included.
 
 ## Reproducing Figures
 
@@ -113,21 +117,24 @@ python FIGURE_S4_PLOTTER.py
 cd ../FIGURE_S5
 python FIGURE_S5_PLOTTER.py
 
-cd ../FIGURE_S7
-python FIGURE_S7_PLOTTER.py
+cd ../FIGURE_S6
+python FIGURE_S6_PLOTTER.py
+
+cd ../FIGURE_S8
+python FIGURE_S8_PLOTTER.py
 ```
 
 Several plotters save `.png` output files in their own folder. If running on a headless machine, set a non-interactive Matplotlib backend, for example:
 
 ```bash
-MPLBACKEND=Agg python FIGURE_S5_PLOTTER.py
+MPLBACKEND=Agg python FIGURE_S6_PLOTTER.py
 ```
 
 On Windows PowerShell:
 
 ```powershell
 $env:MPLBACKEND = "Agg"
-py FIGURE_S5_PLOTTER.py
+py FIGURE_S6_PLOTTER.py
 ```
 
 ## Processed Dataset Notes
@@ -145,10 +152,13 @@ The processed pickle files are Python dictionaries. Their top-level keys are:
 | `FIGURE_S2_PRE_COVERAGE_BINDING_ENERGY.pkl` | CO/H coverage arrays and charge-state binding-energy arrays |
 | `FIGURE_S3_WINDOW_SENSITIVITY.pkl` | `window_width_ML`, `roughness`, `bootstrap_sd_ML`, `selected_window_width_ML` |
 | `FIGURE_S4_GCMC_EQUILIBRATION.pkl` | `format`, `n_sites`, `columns` |
-| `FIGURE_S5_PARITY.pkl` | `format`, `description`, `systems` |
-| `FIGURE_S7_FUNCTIONALS.pkl` | `labels`, `binding_energy_eV`, `experimental_range_eV` |
+| `FIGURE_S5_GCMC_LATTICE_COMPARISON.pkl` | `17x17`, `30x30`, `43x43` |
+| `FIGURE_S6_PARITY.pkl` | `format`, `description`, `systems` |
+| `FIGURE_S8_FUNCTIONALS.pkl` | `labels`, `binding_energy_eV`, `experimental_range_eV` |
 
-The S7 dataset stores CO* binding energies and the experimental range using the sign convention plotted in `FIGURE_S7_PLOTTER.py`.
+The S8 dataset stores CO* binding energies and the experimental range using the sign convention plotted in `FIGURE_S8_PLOTTER.py`.
+
+Figure S5 reads its trajectory values and convergence steps from `FIGURE_S5_GCMC_LATTICE_COMPARISON.pkl`. These synthetic, target-driven trajectories use a common energy offset so that each energy trace starts at zero eV/site.
 
 ## Data Availability
 
@@ -269,6 +279,8 @@ The plotting scripts use standard scientific Python packages, primarily:
 - Python 3
 - `numpy`
 - `matplotlib`
+
+The Figure S5 plotter additionally requires `pandas`.
 
 The spatial-analysis script additionally requires:
 

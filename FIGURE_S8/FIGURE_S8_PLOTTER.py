@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
-PKL_PATH = BASE_DIR / "FIGURE_S7_FUNCTIONALS.pkl"
-OUTPUT_PATH = BASE_DIR / "FIGURE_S7.png"
+PKL_PATH = BASE_DIR / "FIGURE_S8_FUNCTIONALS.pkl"
+OUTPUT_PATH = BASE_DIR / "FIGURE_S8.png"
 
 # ============================================================
 # Load data

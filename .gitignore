@@ -19,3 +19,9 @@ SNAPS/
 # Logs and transient output
 *.log
 *.tmp
+
+# Local figure outputs and source workbook
+/FIGURE_S5/*.png
+/FIGURE_S5/*.xlsx
+/FIGURE_S6/*.png
+/FIGURE_S8/*.png
