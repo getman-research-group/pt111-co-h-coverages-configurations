@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter, FormatStrFormatter, MaxNLocator
 
 
 # ============================================================
@@ -28,9 +29,13 @@ H_COLOR = "red"
 MAIN_LINEWIDTH = 0.8
 INSET_LINEWIDTH = 0.9
 
-# Inset location in figure-relative coordinates:
+# Inset locations in main-axis-relative coordinates:
 # [left, bottom, width, height]
-INSET_POSITION = [0.37, 0.535, 0.41, 0.34]
+INSET_POSITIONS = [
+    [0.29, 0.49, 0.17, 0.24],
+    [0.535, 0.49, 0.17, 0.24],
+    [0.78, 0.49, 0.17, 0.24],
+]
 
 
 # ============================================================
@@ -153,79 +158,62 @@ ax1.legend(
 
 
 # ============================================================
-# Inset: 1000-move convergence window
+# Insets: separate convergence windows, matching Figure S5
 # ============================================================
 
-axins = fig.add_axes(INSET_POSITION)
-axins2 = axins.twinx()
+production_mask = phase == "production"
 
-axins.plot(
-    conv_steps,
-    conv_energy,
-    color=ENERGY_COLOR,
-    lw=INSET_LINEWIDTH
-)
 
-axins2.plot(
-    conv_steps,
-    conv_co,
-    color=CO_COLOR,
-    lw=INSET_LINEWIDTH
-)
+def add_convergence_inset(values, mean, sd, label, color, unit, bounds):
+    inset = ax1.inset_axes(bounds)
+    inset.plot(conv_steps, values, color=color, linewidth=INSET_LINEWIDTH)
+    inset.set_xlim(conv_start, conv_end)
 
-axins2.plot(
-    conv_steps,
-    conv_h,
-    color=H_COLOR,
-    lw=INSET_LINEWIDTH
-)
+    value_min, value_max = values.min(), values.max()
+    value_range = value_max - value_min
+    if value_range == 0:
+        value_range = 1.0 / n_sites
+    inset.set_ylim(value_min - 0.10 * value_range, value_max + 0.10 * value_range)
+    inset.set_xticks([conv_start, conv_end])
+    inset.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
+    inset.yaxis.set_major_locator(MaxNLocator(nbins=3, min_n_ticks=2))
+    inset.yaxis.set_major_formatter(FormatStrFormatter("%.4f" if unit == "ML" else "%.3f"))
+    inset.tick_params(axis="both", labelsize=12, pad=2, length=3)
+    inset.grid(alpha=0.16)
+    for spine in inset.spines.values():
+        spine.set_visible(True)
+        spine.set_linewidth(0.7)
+        spine.set_color(color)
+    inset.set_title(
+        f"{label} | {conv_end:,.0f} moves\nSD = {sd:.5f} {unit}",
+        fontsize=13, color=color, pad=7,
+    )
+    ax1.text(
+        bounds[0] + bounds[2] / 2, 0.40,
+        f"Mean: {mean:.5f} {unit}",
+        ha="center", va="bottom", color=color, fontsize=14,
+        transform=ax1.transAxes,
+    )
 
-axins.set_title("1000-Move Convergence Window", fontsize=23, pad=5)
 
-axins.set_xlabel("Number of Moves", fontsize=20)
-axins.set_ylabel(
-    r"$E^{\mathrm{form,CE}}$ / eV/site",
-    fontsize=20
-)
-axins2.set_ylabel(
-    r"$\theta_{\mathrm{CO}*}, \theta_{\mathrm{H}*}$ / ML",
-    fontsize=20
-)
-
-axins.tick_params(axis="both", labelsize=18)
-axins2.tick_params(axis="y", labelsize=18)
-
-# Match the visual scale in the reference plot closely
-energy_pad = max(0.003, 0.12 * (conv_energy.max() - conv_energy.min()))
-axins.set_ylim(
-    conv_energy.min() - energy_pad,
-    conv_energy.max() + energy_pad
-)
-
-axins2.set_ylim(0.10, 0.50)
-axins.set_xlim(conv_start, conv_end)
-
-stats_text = (
-    rf"$\sigma(\theta_{{CO}})$ = {sd_co:.5f}" + "\n"
-    rf"$\sigma(\theta_{{H}})$ = {sd_h:.5f}" + "\n"
-    rf"$\sigma(E/N)$ = {sd_energy:.6f} eV/site"
-)
+for values, full_values, sd, label, color, unit, bounds in zip(
+    [conv_co, conv_h, conv_energy],
+    [co_cov, h_cov, energy_per_site],
+    [sd_co, sd_h, sd_energy],
+    [r"$\theta_{\mathrm{CO}*}$", r"$\theta_{\mathrm{H}*}$", r"$E^{\mathrm{form,CE}}$"],
+    [CO_COLOR, H_COLOR, ENERGY_COLOR],
+    ["ML", "ML", "eV/site"],
+    INSET_POSITIONS,
+):
+    add_convergence_inset(
+        values, np.mean(full_values[production_mask]), sd,
+        label, color, unit, bounds,
+    )
 
 ax1.text(
-    0.245,
-    0.34,
-    stats_text,
-    transform=ax1.transAxes,
-    fontsize=14,
-    va="bottom",
-    ha="left",
-    linespacing=1.25,
-    bbox=dict(
-        boxstyle="round,pad=0.25",
-        facecolor="white",
-        edgecolor="gray",
-        alpha=0.95
-    )
+    0.62, 0.87,
+    f"{len(conv_steps):,}-move windows; means from production",
+    ha="center", transform=ax1.transAxes, fontsize=14, color="#444444",
 )
 
 
